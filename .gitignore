@@ -1,0 +1,22 @@
+# Byte-compiled / Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtualenv
+venv/
+env/
+*.egg-info/
+
+# Django
+*.sqlite3
+*.log
+media/
+staticfiles/
+
+# VSCode, PyCharm, outros IDEs
+.vscode/
+.idea/
+
+# Mac
+.DS_Store 
