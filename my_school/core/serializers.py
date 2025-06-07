@@ -14,15 +14,7 @@ class UserSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'groups']
-
-
-class CourseSerializer(serializers.ModelSerializer):
-    teacher = UserSerializer(read_only=True)
-    
-    class Meta:
-        model = Course
-        fields = ['id', 'name', 'description', 'teacher', 'created_at']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'groups', 'is_staff', 'is_superuser']
 
 
 class MaterialSerializer(serializers.ModelSerializer):
@@ -46,6 +38,16 @@ class QuizSerializer(serializers.ModelSerializer):
     class Meta:
         model = Quiz
         fields = ['id', 'title', 'description', 'course', 'owner', 'created_at', 'questions']
+
+
+class CourseSerializer(serializers.ModelSerializer):
+    teacher = UserSerializer(read_only=True)
+    materials = MaterialSerializer(many=True, read_only=True)
+    quizzes = QuizSerializer(many=True, read_only=True)
+    
+    class Meta:
+        model = Course
+        fields = ['id', 'name', 'description', 'teacher', 'created_at', 'materials', 'quizzes']
 
 
 class SubmissionSerializer(serializers.ModelSerializer):

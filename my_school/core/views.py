@@ -24,6 +24,12 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAdminUser]
 
+    @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
+    def me(self, request):
+        """Endpoint para usuário acessar seus próprios dados"""
+        serializer = self.get_serializer(request.user)
+        return Response(serializer.data)
+
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
     def assign_role(self, request, pk=None):
         user = self.get_object()
@@ -34,6 +40,24 @@ class UserViewSet(viewsets.ModelViewSet):
         user.groups.clear()
         user.groups.add(group)
         return Response({'detail': f'role {role_name} atribuída a {user.username}'})
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
+    def remove_from_group(self, request, pk=None):
+        user = self.get_object()
+        group_name = request.data.get('group_name')
+        
+        if not group_name:
+            return Response({'detail': 'group_name é obrigatório'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            group = Group.objects.get(name=group_name)
+            if group in user.groups.all():
+                user.groups.remove(group)
+                return Response({'detail': f'Usuário {user.username} removido do grupo {group_name}'})
+            else:
+                return Response({'detail': f'Usuário não pertence ao grupo {group_name}'}, status=status.HTTP_400_BAD_REQUEST)
+        except Group.DoesNotExist:
+            return Response({'detail': f'Grupo {group_name} não encontrado'}, status=status.HTTP_404_NOT_FOUND)
 
 
 class CourseViewSet(viewsets.ModelViewSet):
@@ -118,7 +142,8 @@ class SubmissionViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action in ['create']:
-            return [IsStudent()]
+            # Permite que estudantes e admins criem submissões
+            return [permissions.IsAuthenticated()]
         elif self.action in ['update','partial_update','destroy']:
             return [permissions.IsAdminUser()]  # Apenas admin pode modificar submissões
         return [permissions.IsAuthenticated()]
@@ -128,4 +153,10 @@ class SubmissionViewSet(viewsets.ModelViewSet):
         if self.request.user.groups.filter(name='professor').exists() or self.request.user.is_staff:
             return Submission.objects.all()
         # Alunos veem apenas suas próprias submissões
-        return Submission.objects.filter(student=self.request.user) 
+        return Submission.objects.filter(student=self.request.user)
+
+
+class GroupViewSet(viewsets.ModelViewSet):
+    queryset = Group.objects.all()
+    serializer_class = GroupSerializer
+    permission_classes = [permissions.IsAdminUser] 
